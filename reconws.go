@@ -14,7 +14,7 @@ type Client struct {
 }
 
 type channeler struct {
-	read  chan string
+	read  chan []byte
 	recon chan bool
 	done  chan bool
 	quit  chan bool
@@ -31,7 +31,7 @@ func NewClient() *Client {
 		conn: nil,
 		url:  "",
 		chans: channeler{
-			read:  make(chan string),
+			read:  make(chan []byte),
 			done:  make(chan bool),
 			quit:  make(chan bool),
 			recon: make(chan bool),
@@ -46,7 +46,7 @@ func NewClient() *Client {
 	go c.fireUpReconChannel()
 	return c
 }
-func (c *Client) SetChannels(read chan string, done chan bool) *Client {
+func (c *Client) SetChannels(read chan []byte, done chan bool) *Client {
 	c.chans.read = read
 	c.chans.done = done
 	return c
@@ -104,7 +104,7 @@ func (c *Client) Close() {
 		return
 	}
 }
-func (c *Client) ReadChan() chan string {
+func (c *Client) ReadChan() chan []byte {
 	return c.chans.read
 }
 func (c *Client) read() {
@@ -129,7 +129,7 @@ func (c *Client) read() {
 			return
 		}
 
-		c.chans.read <- string(message)
+		c.chans.read <- message
 	}
 
 	c.cbs.onDisconnect()
