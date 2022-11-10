@@ -6,11 +6,12 @@ import (
 )
 
 type Client struct {
-	conn       *websocket.Conn
-	chans      channeler
-	isShutdown bool
-	url        string
-	cbs        callbacks
+	conn             *websocket.Conn
+	chans            channeler
+	isShutdown       bool
+	url              string
+	cbs              callbacks
+	subscriptionData []byte
 }
 
 type channeler struct {
@@ -63,6 +64,10 @@ func (c *Client) OnReconnect(fn func()) *Client {
 	c.cbs.onReconnect = fn
 	return c
 }
+func (c *Client) SetSubscriptionData(data []byte) *Client {
+	c.subscriptionData = data
+	return c
+}
 func (c *Client) fireUpReconChannel() {
 	for {
 		select {
@@ -90,12 +95,33 @@ func (c *Client) Connect(url string) (*websocket.Conn, error) {
 	if err != nil {
 		return nil, err
 	}
+	c.conn = conn
+
+	if len(c.subscriptionData) > 0 {
+		err = c.Write(websocket.TextMessage, c.subscriptionData)
+		if err != nil {
+			_ = c.conn.Close()
+			return nil, err
+		}
+	}
 
 	c.cbs.onConnect()
-	c.conn = conn
 	go c.read()
 	return conn, nil
 }
+
+func (c *Client) Write(msgType int, data []byte) error {
+	if msgType == 0 {
+		msgType = websocket.TextMessage
+	}
+
+	err := c.conn.WriteMessage(msgType, data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (c *Client) Close() {
 	c.isShutdown = true
 	c.chans.quit <- true

@@ -7,7 +7,7 @@ import (
 
 func main() {
 	chDone := make(chan bool, 2)
-	chRead := make(chan string)
+	chRead := make(chan []byte)
 	c := reconws.NewClient().SetChannels(chRead, chDone).OnConnect(onConnect)
 	_, err := c.Connect("wss://stream.binance.us:9443/stream?streams=btcusd@kline_15m/btcusd@kline_5m")
 	if err != nil {
